@@ -16,3 +16,46 @@ function edit(post_id) {
     document.querySelector(`#post${post_id}`).innerHTML = post_body.value;
   })
 }
+
+function like(id) {
+  var like_btn = document.querySelector(`#likebutton${id}`);
+  var like_ct = document.querySelector(`#likecount${id}`);
+
+   like_btn.addEventListener('click', () => {
+
+       if (like_btn.style.backgroundColor == 'white') {
+           fetch('/like/' + id, {
+               method: 'PUT',
+               body: JSON.stringify({
+                   like: true
+               })
+             })
+
+           like_btn.style.backgroundColor = 'red';
+
+           fetch('/like/'+ id)
+           .then(response => response.json())
+           .then(post => {
+
+               like_ct.innerHTML = post.likecount;
+           });
+       }
+       else {
+           fetch('/like/' + id, {
+               method: 'PUT',
+               body: JSON.stringify({
+                   like: false
+               })
+             });
+
+           like_btn.style.backgroundColor = 'white';
+
+           fetch('/like/'+`${id}`)
+           .then(response => response.json())
+           .then(post => {
+               like_ct.innerHTML = post.likecount;
+           });
+       }
+       return false;
+   });
+}

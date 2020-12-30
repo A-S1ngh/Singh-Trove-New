@@ -11,6 +11,11 @@ class Post(models.Model):
     timestamp = models.DateTimeField()
     likecount = models.IntegerField(default=0)
 
+    def serialize(self):
+        return {
+            "likecount":self.likecount
+        }
+
 class Follow(models.Model):
     follower = models.ForeignKey(User, on_delete=models.CASCADE, related_name="following")
     following = models.ForeignKey(User, on_delete=models.CASCADE, related_name="follower")

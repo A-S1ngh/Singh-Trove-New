@@ -42,10 +42,61 @@ def edit(request, post_id):
         if data.get("body") is not None:
             post.body = data["body"]
         post.save()
+        return HttpResponse(status=204)
 
 
+@csrf_exempt
+def like(request, post_id):
+    post = Post.objects.get(id=post_id)
+
+    if request.method == "GET":
+        return JsonResponse(post.serialize())
+
+    if request.method == "PUT":
+        data = json.loads(request.body)
+        print(data.get("like"))
+        if data.get("like"):
+            Like.objects.create(user=request.user, post=post)
+            post.likecount = Like.objects.filter(post=post).count()
+        else:
+            Like.objects.filter(user=request.user, post=post).delete()
+            post.likecount = Like.objects.filter(post=post).count()
+        post.save()
+        return HttpResponse(status=204)
 
 
+def profile(request, username):
+    profileowner = User.objects.get(username = username)
+    posts = Post.objects.filter(user=profileowner.id).order_by('-timestamp')
+    button = "Follow" if Follow.objects.filter(follower=request.user, following=profileowner).count() == 0 else "Unfollow"
+    p = Paginator(posts, 10)
+    pn = request.GET.get('page')
+    sp = p.get_page(pn)
+    if request.method == "POST":
+        if request.POST["button"] == "Follow":
+            button = "Unfollow"
+            Follow.objects.create(follower=request.user, following=profileowner)
+        else:
+            button = "Follow"
+            Follow.objects.get(follower=request.user, following=profileowner).delete()
+    return render(request, "network/profile.html", {
+        "username": username,
+        "posts": sp,
+        "followers": Follow.objects.filter(following=profileowner).count(),
+        "following": Follow.objects.filter(follower=profileowner).count(),
+        "button": button
+    })
+
+def following(request):
+    user = request.user
+    following = Follow.objects.filter(follower=user).values('following_id')
+    posts = Post.objects.filter(user__in=following).order_by('-timestamp')
+    p = Paginator(posts, 10)
+    pn = request.GET.get('page')
+    sp = p.get_page(pn)
+    return render(request, "network/following.html",{
+        "posts": sp,
+    })
 
 def login_view(request):
     if request.method == "POST":
